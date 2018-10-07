@@ -5,6 +5,7 @@
     - mysql_root_password: password
     - mysql_user_name: vagrant
     - mysql_user_password: vagrant
+    - mysql_database: fighter-curation
 
   tasks:
     - name: set timezone to Asia/Tokyo
@@ -35,6 +36,24 @@
         - mod_ssl
         - mod_geoip
 
+    - name: httpd.conf replace DocumentRoot
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: '^DocumentRoot "/var/www/html"'
+        replace: DocumentRoot "/app/fighter-curation/public"
+ 
+    - name: httpd.conf replace Directory
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: '^\<Directory "/var/www/html"\>'
+        replace: <Directory "/app/fighter-curation/public">
+ 
+    - name: httpd.conf replace AllowOverride
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: 'AllowOverride None'
+        replace: AllowOverride All
+
     - name: install php
       yum:
         name: "{{ item }}"
@@ -55,6 +74,14 @@
     - name: install composer
       shell: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin && mv /usr/bin/composer.phar /usr/bin/composer
          creates=/usr/bin/composer
+
+    - name: install required module for laravel
+      yum: 
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - git
+        - unzip
 
     - name: uninstall mariaDB
       yum:
@@ -89,7 +116,7 @@
         - MySQL-python
         - libselinux-python
 
-    - name: mysqld systemctl setting
+    - name: start mysqld 
       service:
         name: mysqld
         state: started
@@ -114,12 +141,17 @@
         group: root
         mode: 0600
 
-    - name: add user
+    - name: create database
+      mysql_db:
+        name: "{{ mysql_database }}"
+        state: present
+
+    - name: add mysql user
       mysql_user:
         name: "{{mysql_user_name}}"
         password: "{{mysql_user_password}}"
         host: localhost
-        priv: '*.*:ALL,GRANT'
+        priv: '{{ mysql_database }}.*:ALL,GRANT'
 
     - name: restart network
       service:
