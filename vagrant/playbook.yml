@@ -2,9 +2,9 @@
   become: yes
   user: root
   vars:
-    - mysql_root_password: password
+    - mysql_root_password: Password1!
     - mysql_user_name: vagrant
-    - mysql_user_password: vagrant
+    - mysql_user_password: Vagrant1!
     - mysql_database: fighter-curation
 
   tasks:
@@ -96,62 +96,55 @@
     - name: remove mariaDB date
       shell: rm -rf /var/lib/mysql
 
-    - name: install rpm repository
+    - name: install mysql rpm repository
       yum: 
-        name: https://dev.mysql.com/get/mysql57-community-release-el6-11.noarch.rpm
+        name: https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm
         state: present
 
     - name: install mysql
       yum:
         name: "{{ item }}"
-        enablerepo: mysql56-community
-        disablerepo: mysql57-community
         state: present
       with_items:
-        - mysql-community-server
-        - mysql-community-client
-        - mysql-community-common
-        - mysql-community-libs
-        - mysql-community-libs-compat
+        - mysql-community-devel*
+        - mysql-community-server*
         - MySQL-python
-        - libselinux-python
 
-    - name: start mysqld 
+    - name: my.cnf by template
+      copy: 
+        src: my.cnf
+        dest: /etc/my.cnf
+        mode: 0644
+
+    - name: start mysqld
       service:
         name: mysqld
         state: started
         enabled: yes
 
-    - name: change root password
-      mysql_user:
-        name: root
-        password: "{{ mysql_root_password }}"
-        host: "{{ item }}"
-      with_items:
-        - 127.0.0.1
-        - ::1
-        - localhost.localdomain
-        - localhost
+    - name: get root password
+      shell: "grep 'A temporary password is generated for root@localhost' /var/log/mysqld.log | awk -F ' ' '{print $(NF)}'"
+      register: root_password
 
-    - name: /root/.my.cnf by template
-      template: 
-        src: my.cnf.j2
-        dest: /root/.my.cnf
-        owner: root
-        group: root
-        mode: 0600
+    - name: update expired root user password
+      command: mysql --user root --password={{ root_password.stdout }} --connect-expired-password --execute="ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
 
     - name: create database
       mysql_db:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
         name: "{{ mysql_database }}"
         state: present
 
     - name: add mysql user
       mysql_user:
-        name: "{{mysql_user_name}}"
-        password: "{{mysql_user_password}}"
-        host: localhost
-        priv: '{{ mysql_database }}.*:ALL,GRANT'
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: "{{ mysql_user_name }}"
+        password: "{{ mysql_user_password }}"
+        priv: '*.*:ALL,GRANT'
+        state: present
+        host: '%'
 
     - name: restart network
       service:
