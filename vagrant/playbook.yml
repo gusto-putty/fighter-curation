@@ -1,0 +1,159 @@
+- hosts: all
+  become: yes
+  user: root
+  vars:
+    - mysql_root_password: Password1!
+    - mysql_user_name: vagrant
+    - mysql_user_password: Vagrant1!
+    - mysql_database: fighter-curation
+
+  tasks:
+    - name: set timezone to Asia/Tokyo
+      timezone:
+        name: Asia/Tokyo
+
+    - name: install epel
+      yum:
+        name: epel-release
+        state: present
+
+    - name: install remi repository
+      yum:
+        name: http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+        state: present
+
+    - name: install net-tools
+      yum:
+        name: net-tools
+        state: present
+
+    - name: install httpd
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - httpd
+        - mod_ssl
+        - mod_geoip
+
+    - name: httpd.conf replace DocumentRoot
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: '^DocumentRoot "/var/www/html"'
+        replace: DocumentRoot "/app/fighter-curation/public"
+ 
+    - name: httpd.conf replace Directory
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: '^\<Directory "/var/www/html"\>'
+        replace: <Directory "/app/fighter-curation/public">
+ 
+    - name: httpd.conf replace AllowOverride
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: 'AllowOverride None'
+        replace: AllowOverride All
+
+    - name: install php
+      yum:
+        name: "{{ item }}"
+        state: present
+        enablerepo: remi,remi-php72
+      with_items:
+        - php
+        - php-devel
+        - php-mbstring
+        - php-pdo
+        - php-xml
+        - php-tokenizer
+        - php-json
+        - php-ctype
+        - php-openssl
+        - php-mysql
+
+    - name: install composer
+      shell: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin && mv /usr/bin/composer.phar /usr/bin/composer
+         creates=/usr/bin/composer
+
+    - name: install required module for laravel
+      yum: 
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - git
+        - unzip
+
+    - name: uninstall mariaDB
+      yum:
+        name: mariadb-libs
+        state: absent
+
+    - name: uninstall default mysql
+      yum:
+        name: mysql*
+        state: absent
+
+    - name: remove mariaDB date
+      shell: rm -rf /var/lib/mysql
+
+    - name: install mysql rpm repository
+      yum: 
+        name: https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm
+        state: present
+
+    - name: install mysql
+      yum:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - mysql-community-devel*
+        - mysql-community-server*
+        - MySQL-python
+
+    - name: my.cnf by template
+      copy: 
+        src: my.cnf
+        dest: /etc/my.cnf
+        mode: 0644
+
+    - name: start mysqld
+      service:
+        name: mysqld
+        state: started
+        enabled: yes
+
+    - name: get root password
+      shell: "grep 'A temporary password is generated for root@localhost' /var/log/mysqld.log | awk -F ' ' '{print $(NF)}'"
+      register: root_password
+
+    - name: update expired root user password
+      command: mysql --user root --password={{ root_password.stdout }} --connect-expired-password --execute="ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mysql_root_password }}';"
+
+    - name: create database
+      mysql_db:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: "{{ mysql_database }}"
+        state: present
+
+    - name: add mysql user
+      mysql_user:
+        login_user: root
+        login_password: "{{ mysql_root_password }}"
+        name: "{{ mysql_user_name }}"
+        password: "{{ mysql_user_password }}"
+        priv: '*.*:ALL,GRANT'
+        state: present
+        host: '%'
+
+    - name: restart network
+      service:
+        name: network
+        state: restarted
+        enabled: yes
+
+    - name: start httpd
+      service:
+        name: httpd
+        state: started
+        enabled: yes
