@@ -1,34 +1,28 @@
 # fighter-curation
-## ローカル環境
-こいつらをインストーーーーール！
-- virtual box
-- vagrant
+## 環境構築
 
-### gitのクローン
-```
-$ cd クローンしたいディレクトリ
-$ git clone githubから取得したURL
-```
+### 必要なもの
+- git 
+- docker
+	- Docker version 18.06.1-ce, build e68fc7a
+- docker-compose
+	- docker-compose version 1.22.0, build f46880f
 
-### ボックスを追加
-```
-$ vagrant box add CentOS72 https://github.com/CommanderK5/packer-centos-template/releases/download/0.7.2/vagrant-centos-7.2.box
-```
+### 構築コマンド
 
-### vagrantの起動(初回起動時はansibleが走るので時間がかかります。)
 ```
-$ vagrant up
-```
-
-### laravelの本体をインストール
-```
-$ vagrant ssh
-$ cd /app/fighter-curation
-$ composer install
+$ git clone https://github.com/gusto-putty/fighter-curation.git
+$ cd fighter-curation
+$ git submodule init
+$ git submodule update
+$ cp src/.env.example src/.env
+$ cp .env.laradock laradock/.env
+$ cd laradock
+$ docker-compose up -d --build nginx mysql workspace
+$ docker-compose exec workspace composer install
+$ docker-compose exec workspace npm install
 ```
 
-### 動作確認
-以下のURLにアクセスして画面が出力されればクリア！
-```
-http://192.168.33.10/
-```
+画面が表示できれば完了
+
+[http://localhost:8080/](http://localhost:8080/)
