@@ -1,5 +1,2 @@
-vagrant/.vagrant
-vagrant/playbook.retry
-
 data/*
 !data/.gitkeep
