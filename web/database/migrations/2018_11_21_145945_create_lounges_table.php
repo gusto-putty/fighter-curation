@@ -14,14 +14,13 @@ class CreateLoungesTable extends Migration {
 	{
 		Schema::create('lounges', function(Blueprint $table)
 		{
-			$table->integer('id')->primary();
+			$table->increments('id');
 			$table->string('name', 45);
 			$table->string('icon', 100)->nullable();
 			$table->string('description', 100)->nullable();
 			$table->boolean('is_published')->default(0);
-			$table->dateTime('created_at');
-			$table->dateTime('update_at');
-			$table->dateTime('delete_at')->nullable();
+			$table->timestamps();
+			$table->softDeletes();
 			$table->integer('version')->default(0);
 		});
 	}

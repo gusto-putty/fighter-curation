@@ -14,8 +14,8 @@ class CreateNotesTagsTable extends Migration {
 	{
 		Schema::create('notes_tags', function(Blueprint $table)
 		{
-			$table->integer('note_id')->index('fk_notes_tags_notes1_idx');
-			$table->integer('tag_id')->index('fk_notes_tags_tags1_idx');
+			$table->integer('note_id')->unsigned()->index('fk_notes_tags_notes1_idx');
+			$table->integer('tag_id')->unsigned()->index('fk_notes_tags_tags1_idx');
 			$table->primary(['note_id','tag_id']);
 		});
 	}

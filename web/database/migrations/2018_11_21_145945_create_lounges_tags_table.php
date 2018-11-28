@@ -14,8 +14,8 @@ class CreateLoungesTagsTable extends Migration {
 	{
 		Schema::create('lounges_tags', function(Blueprint $table)
 		{
-			$table->integer('lounge_id');
-			$table->integer('tag_id')->index('fk_lounges_tags_tags1_idx');
+			$table->integer('lounge_id')->unsigned()->index('fk_lounges_tags_lounges1_idx');
+			$table->integer('tag_id')->unsigned()->index('fk_lounges_tags_tags1_idx');
 			$table->primary(['lounge_id','tag_id']);
 		});
 	}
