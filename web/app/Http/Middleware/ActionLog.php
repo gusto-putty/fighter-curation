@@ -6,6 +6,9 @@ use Closure;
 use Log;
 use Route;
 
+/**
+ * アクションの開始と完了をログに出す
+ */
 class ActionLog
 {
     /**
