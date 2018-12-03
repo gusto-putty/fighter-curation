@@ -26,3 +26,15 @@ $ docker-compose exec workspace npm install
 画面が表示できれば完了
 
 [http://localhost:8080/](http://localhost:8080/)
+
+### マイグレーションの実行
+mysqlの認証方式を変更しないと動かないのでその手順も入れておきます。
+
+```
+$ docker-compose exec mysql bash
+$ mysql -u root -p
+mysql> ALTER USER 'vagrant'@'%' IDENTIFIED WITH mysql_native_password BY 'Vagrant1!';
+mysql> exit
+$ docker-compose exec workspace php artisan migrate
+```
+これで必要なテーブルが全てできました。
