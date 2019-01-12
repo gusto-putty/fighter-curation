@@ -11,15 +11,13 @@
 ### 構築コマンド
 
 ```
-$ git clone https://github.com/gusto-putty/fighter-curation.git
-$ cd fighter-curation
-$ git submodule init
-$ git submodule update
-$ cp src/.env.example src/.env
+$ git clone --recursive https://github.com/gusto-putty/fighter-curation.git
+$ cp web/.env.example web/.env
 $ cp .env.laradock laradock/.env
 $ cd laradock
 $ docker-compose up -d --build nginx mysql workspace
 $ docker-compose exec workspace composer install
+$ docker-compose exec workspace php artisan key:generate
 $ docker-compose exec workspace npm install
 ```
 
