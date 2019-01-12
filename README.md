@@ -14,25 +14,15 @@
 $ git clone --recursive https://github.com/gusto-putty/fighter-curation.git
 $ cp web/.env.example web/.env
 $ cp .env.laradock laradock/.env
+$ cp my.cnf laradock/mysql/my.cnf
 $ cd laradock
 $ docker-compose up -d --build nginx mysql workspace
 $ docker-compose exec workspace composer install
 $ docker-compose exec workspace php artisan key:generate
 $ docker-compose exec workspace npm install
+$ docker-compose exec workspace php artisan migrate
 ```
 
 画面が表示できれば完了
 
 [http://localhost:8080/](http://localhost:8080/)
-
-### マイグレーションの実行
-mysqlの認証方式を変更しないと動かないのでその手順も入れておきます。
-
-```
-$ docker-compose exec mysql bash
-$ mysql -u root -p
-mysql> ALTER USER 'vagrant'@'%' IDENTIFIED WITH mysql_native_password BY 'Vagrant1!';
-mysql> exit
-$ docker-compose exec workspace php artisan migrate
-```
-これで必要なテーブルが全てできました。
